@@ -1,0 +1,41 @@
+{
+  "name": "Project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "async": "^3.2.0",
+    "axios": "^0.20.0",
+    "csv-parser": "^2.3.3",
+    "json2csv": "^5.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.2.0",
+    "eslint-plugin-import": "^2.21.2"
+  },
+  "eslintConfig": {
+    "extends": [
+      "airbnb-base"
+    ],
+    "rules": {
+      "no-console": "off",
+      "no-underscore-dangle": 0,
+      "max-len": "off",
+      "no-param-reassign": "off",
+      "no-plusplus": "off",
+      "no-restricted-properties": "off"
+    },
+    "env": {
+      "browser": true,
+      "node": true,
+      "jquery": true
+    }
+  }
+}
