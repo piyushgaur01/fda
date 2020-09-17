@@ -30,7 +30,8 @@
       "max-len": "off",
       "no-param-reassign": "off",
       "no-plusplus": "off",
-      "no-restricted-properties": "off"
+      "no-restricted-properties": "off",
+      "camelcase": "off"
     },
     "env": {
       "browser": true,

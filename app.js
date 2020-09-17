@@ -1,37 +1,49 @@
 const async = require('async');
 const fs = require('fs');
+const csv = require('csv-parser');
 const { parse } = require('json2csv');
 
-const { calculateDailyReturn, standardDeviation, getStockBeta } = require('./library');
+const {
+  averageReturn,
+  standardDeviation,
+  leastSquareRegression,
+} = require('./library');
+
+const RISK_FREE_RETURN = 0.06;
+const EXPECTED_MARKET_RETURN = 0.1;
+let MARKET_RETURN;
 
 const filePath = `${__dirname}\\data\\securities`;
-const processedData = [];
+const market = [];
+const finalData = [];
+
+let adjCloseMarket;
 
 function calculateStockParameters(filename, cb) {
   const code = filename.split('.json')[0];
   const data = JSON.parse(fs.readFileSync(`${filePath}\\${filename}`, { encoding: 'utf-8' }))[0];
   const { adjclose } = data.indicators.adjclose[0];
 
-  const dailyReturns = calculateDailyReturn(adjclose);
-  const meanDailyReturn = Math.pow(
-    dailyReturns.reduce((acc, val) => (acc) * (1 + val), 1), 1 / (dailyReturns.length),
-  ) - 1;
-  const stdDailyReturn = standardDeviation(dailyReturns);
+  const avgReturn = averageReturn(adjclose);
+  const stdDevDailyReturn = standardDeviation(adjclose);
 
-  const meanReturn = Math.pow(1 + meanDailyReturn, dailyReturns.length) - 1;
-  const stdReturn = Math.sqrt(stdDailyReturn) * stdDailyReturn;
+  // const slope = leastSquareRegression(adjclose, adjCloseMarket);
+  const slope = leastSquareRegression(adjCloseMarket, adjclose);
+  const adjBeta = 0.67 * slope + 0.33;
 
-  const stock = getStockBeta(code);
+  const treynorRatio = (avgReturn - RISK_FREE_RETURN) / adjBeta;
 
   const security = {
-    name: stock.name,
+    // name: stock.name,
     code,
-    meanReturn,
-    stdReturn,
-    beta: stock['short term / long term beta'].split(' / ')[1],
+    'Average Return': avgReturn,
+    'Std Dev': stdDevDailyReturn,
+    'Raw Beta': slope,
+    'Adj Beta': adjBeta,
+    TR: treynorRatio,
   };
 
-  processedData.push(security);
+  finalData.push(security);
   cb();
 }
 
@@ -49,9 +61,9 @@ function start() {
         }
 
         try {
-          const opts = { ...Object.keys(processedData[0]) };
-          const csv = parse(processedData, opts);
-          fs.writeFileSync(`${__dirname}\\data\\final-data.csv`, csv);
+          const opts = { ...Object.keys(finalData[0]) };
+          const csvData = parse(finalData, opts);
+          fs.writeFileSync(`${__dirname}\\data\\final-data.csv`, csvData);
         } catch (err2) {
           console.error(err2);
         }
@@ -61,4 +73,14 @@ function start() {
   });
 }
 
-start();
+fs.createReadStream(`${__dirname}\\data\\market.csv`)
+  .pipe(csv())
+  .on('data', (data) => market.push(data))
+  .on('end', () => {
+    adjCloseMarket = market.map((item) => parseFloat(item['Adj Close']));
+    MARKET_RETURN = averageReturn(adjCloseMarket);
+    const stdDevMarket = standardDeviation(adjCloseMarket);
+    console.log(`Market Return: ${MARKET_RETURN}`);
+    console.log(`Market Std Dev: ${stdDevMarket}`);
+    start();
+  });
