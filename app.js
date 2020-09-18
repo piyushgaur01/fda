@@ -59,7 +59,7 @@ function calculateStockParameters(filename, cb) {
     for (let index = 0; index < valX.length; index++) {
       d.push({
         [code]: valX[index],
-        Nifty: valY[index]
+        Nifty: valY[index],
       });
     }
     const opts = { ...[`${code}`, 'Nifty'] };
@@ -67,9 +67,9 @@ function calculateStockParameters(filename, cb) {
     fs.writeFileSync(`${__dirname}\\data\\${code}.csv`, csvData);
   }
 
-  const { m: beta, b: intercept } = stats.linearRegression([valY, valX]);
+  // const { m: beta, b: intercept } = stats.linearRegression([valY, valX]);
 
-  // const beta = leastSquareRegression(valY, valX);
+  const beta = leastSquareRegression(valY, valX);
 
   const treynorRatio = (avgReturn - constants.RISK_FREE_RETURN) / beta;
 
@@ -125,7 +125,7 @@ function start() {
           // finalData = finalData.filter((stock) => stock.beta > 0);
 
           // Sorting the data in decreasing order based on Treynor's Ratio
-          // finalData.sort((a, b) => (a['Treynor Ratio (TR)'] > b['Treynor Ratio (TR)'] ? -1 : 1));
+          finalData.sort((a, b) => (a['Treynor Ratio (TR)'] > b['Treynor Ratio (TR)'] ? -1 : 1));
 
           const opts = { ...Object.keys(finalData[0]) };
           const csvData = parse(finalData, opts);
