@@ -20,7 +20,8 @@ const constants = {
   MARKET_RETURN: 0.0,
   SIGMA_M: 0.0,
   ANNUAL_RISK_FREE_RETURN: 0.06,
-  DAILY_RISK_FREE_RETURN: 0.000047762540695384104,
+  // DAILY_RISK_FREE_RETURN: 0.000047762540695384104,
+  DAILY_RISK_FREE_RETURN: 0.00015965358745284597,
 };
 
 let finalData = [];
@@ -39,8 +40,21 @@ function calculateStockParameters(filename, cb) {
   const avgReturn = averageReturn(dailyReturns);
   // const sigmaRi = stats.standardDeviation(dailyReturns.map());
 
-  let beta = (avgReturn - constants.DAILY_RISK_FREE_RETURN) / (constants.MARKET_RETURN - constants.DAILY_RISK_FREE_RETURN);
-  beta = 0.67 * beta + 0.33;
+  // Calcuting beta using linear regression
+  const valX = [...dailyReturns];
+  const valY = [...DAILY_MKT_RTN];
+  if (valX.length > valY.length) {
+    const extra = valX.length - valY.length;
+    valX.splice(valX.length - extra, extra);
+  } else {
+    const extra = valY.length - valX.length;
+    valY.splice(valY.length - extra, extra);
+  }
+
+  const beta = leastSquareRegression(valY, valX);
+
+  // let beta = (avgReturn - constants.DAILY_RISK_FREE_RETURN) / (constants.MARKET_RETURN - constants.DAILY_RISK_FREE_RETURN);
+  // beta = 0.67 * beta + 0.33;
 
   const sigmaEpsilon = Math.sqrt(dailyReturns.length) * Math.sqrt(
     (stats.standardDeviation(dailyReturns.map((x) => x - constants.DAILY_RISK_FREE_RETURN)) ** 2
