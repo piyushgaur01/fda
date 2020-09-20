@@ -11,7 +11,7 @@ const {
 
 const MARKET_DATA = [];
 
-const filePath = `${__dirname}\\data\\securities`;
+const filePath = `${__dirname}\\data\\securities\\historical`;
 
 const constants = {
   MARKET_RETURN: 0.0,
@@ -21,7 +21,7 @@ const constants = {
   DAILY_RISK_FREE_RETURN: 0.00015965358745284597,
 };
 
-let finalData = [];
+let portfolio = [];
 
 let adjCloseMarket;
 let DAILY_MKT_RTN;
@@ -69,7 +69,7 @@ function calculateStockParameters(filename, cb) {
     'Treynor Ratio (TR)': treynorRatio,
   };
 
-  finalData.push(security);
+  portfolio.push(security);
   cb();
 }
 
@@ -88,45 +88,45 @@ function start() {
 
         try {
           // Filter out the stocks which have a negative beta
-          finalData = finalData.filter((stock) => (stock.beta > 0));
+          portfolio = portfolio.filter((stock) => (stock.beta > 0));
 
           // Sorting the data in decreasing order based on Treynor's Ratio
-          finalData.sort((a, b) => (a['Treynor Ratio (TR)'] > b['Treynor Ratio (TR)'] ? -1 : 1));
+          portfolio.sort((a, b) => (a['Treynor Ratio (TR)'] > b['Treynor Ratio (TR)'] ? -1 : 1));
 
-          for (let i = 0; i < finalData.length; i++) {
+          for (let i = 0; i < portfolio.length; i++) {
             let summNumerator = 0;
             let summDenominator = 0;
-            const stock = finalData[i];
+            const stock = portfolio[i];
             for (let j = 0; j <= i; j++) {
-              const tempStock = finalData[j];
+              const tempStock = portfolio[j];
               summNumerator += ((tempStock.expectedReturn - constants.ANNUAL_RISK_FREE_RETURN) * tempStock.beta) / ((tempStock['Sigma Epsilon']));
               summDenominator += (tempStock.beta ** 2) / ((tempStock['Sigma Epsilon']));
             }
             stock.Ci = ((constants.SIGMA_M ** 2) * summNumerator) / (1 + (constants.SIGMA_M ** 2) * summDenominator);
           }
 
-          finalData.forEach((stock) => {
+          portfolio.forEach((stock) => {
             stock.test = stock['Treynor Ratio (TR)'] > stock.Ci ? 'T' : 'F';
           });
 
-          finalData = finalData.filter((stock) => stock.test === 'T');
+          portfolio = portfolio.filter((stock) => stock.test === 'T');
 
           // Cutpoint will be last value of array as we have removed the other values and array is sorted
-          const cStar = finalData[finalData.length - 1].Ci;
+          const cStar = portfolio[portfolio.length - 1].Ci;
           let sumOfZi = 0;
-          finalData.forEach((stock) => {
+          portfolio.forEach((stock) => {
             stock.Zi = Math.abs((stock.beta / stock['Sigma Epsilon']) * (((stock.expectedReturn - constants.ANNUAL_RISK_FREE_RETURN) / stock.beta) - cStar));
             sumOfZi += stock.Zi;
           });
 
-          finalData.forEach((stock) => {
+          portfolio.forEach((stock) => {
             stock.Wi = parseFloat(((stock.Zi / sumOfZi) * 100).toPrecision(3));
           });
 
-          const opts = { ...Object.keys(finalData[0]) };
-          const csvData = parse(finalData, opts);
-          fs.writeFileSync(`${__dirname}\\data\\final-data.csv`, csvData); // -${Date.now()}
-          console.table(finalData, ['code', 'Average Return', 'expectedReturn', 'beta', 'Treynor Ratio (TR)', 'Ci', 'Zi', 'Wi']);
+          const opts = { ...Object.keys(portfolio[0]) };
+          const csvData = parse(portfolio, opts);
+          fs.writeFileSync(`${__dirname}\\data\\portfolio.csv`, csvData); // -${Date.now()}
+          console.table(portfolio, ['code', 'Average Return', 'expectedReturn', 'beta', 'Treynor Ratio (TR)', 'Ci', 'Zi', 'Wi']);
         } catch (err2) {
           console.error(err2);
         }
