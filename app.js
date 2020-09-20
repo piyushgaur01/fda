@@ -4,12 +4,9 @@ const csv = require('csv-parser');
 const stats = require('simple-statistics');
 const { parse } = require('json2csv');
 
-const stocksInfo = require('./data/beta');
-
 const {
   averageReturn,
   calcDailyReturns,
-  leastSquareRegression,
 } = require('./library');
 
 const MARKET_DATA = [];
@@ -28,8 +25,6 @@ let finalData = [];
 
 let adjCloseMarket;
 let DAILY_MKT_RTN;
-
-const getStockInfo = (code) => stocksInfo.find((s) => s.code === code);
 
 function calculateStockParameters(filename, cb) {
   const code = filename.split('.json')[0];
@@ -124,10 +119,8 @@ function start() {
             sumOfZi += stock.Zi;
           });
 
-          let sumWi = 0;
           finalData.forEach((stock) => {
             stock.Wi = parseFloat(((stock.Zi / sumOfZi) * 100).toPrecision(3));
-            sumWi += stock.Wi;
           });
 
           const opts = { ...Object.keys(finalData[0]) };
