@@ -28,7 +28,9 @@ let DAILY_MKT_RTN;
 function calculateStockParameters(filename, cb) {
   const Symbol = filename.split('.json')[0];
   const data = JSON.parse(fs.readFileSync(`${filePath}\\${filename}`, { encoding: 'utf-8' }))[0];
-  const { adjclose } = data.indicators.adjclose[0];
+  let { adjclose } = data.indicators.adjclose[0];
+  // eslint-disable-next-line no-restricted-globals
+  adjclose = adjclose.filter((item) => (!isNaN(item) && item !== null && item !== ''));
 
   const dailyReturns = calcDailyReturns(adjclose);
   const avgReturn = averageReturn(dailyReturns);
@@ -132,6 +134,8 @@ fs.createReadStream(`${__dirname}\\data\\market.csv`)
   .on('data', (data) => MARKET_DATA.push(data))
   .on('end', () => {
     adjCloseMarket = MARKET_DATA.map((item) => parseFloat(item['Adj Close']));
+    // eslint-disable-next-line no-restricted-globals
+    adjCloseMarket = adjCloseMarket.filter((item) => !isNaN(item));
     DAILY_MKT_RTN = calcDailyReturns(adjCloseMarket);
     ratios.MARKET_RETURN = averageReturn(DAILY_MKT_RTN);
     ratios.SIGMA_M = stats.standardDeviation(DAILY_MKT_RTN);

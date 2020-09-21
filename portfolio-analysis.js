@@ -14,15 +14,16 @@ let ratios;
 
 const portfolio = [];
 
-function calculateStockParameters(filename, cb) {
-  const Symbol = filename.split('.json')[0];
-  const data = JSON.parse(fs.readFileSync(`${filePath}\\${filename}`, { encoding: 'utf-8' }))[0];
-  const { adjclose } = data.indicators.adjclose[0];
+function calculateStockParameters(security, cb) {
+  const data = JSON.parse(fs.readFileSync(`${filePath}\\${security.Symbol}.json`, { encoding: 'utf-8' }))[0];
+  let { adjclose } = data.indicators.adjclose[0];
+  // eslint-disable-next-line no-restricted-globals
+  adjclose = adjclose.filter((item) => (!isNaN(item) && item !== null && item !== ''));
   const weightedClose = [];
   const dailyReturns = calcDailyReturns(adjclose);
   const avgReturn = averageReturn(dailyReturns);
 
-  const stock = portfolio.find((s) => s.Symbol === Symbol);
+  const stock = portfolio.find((s) => s.Symbol === security.Symbol);
 
   adjclose.forEach((p) => {
     weightedClose.push(p * stock.Wi);
@@ -38,57 +39,53 @@ function calculateStockParameters(filename, cb) {
 }
 
 function start() {
-  fs.readdir(`${filePath}`, (error, files) => {
-    if (error) console.log(error);
+  async.eachSeries(portfolio,
+    calculateStockParameters,
+    (err) => {
+      // if any of the file processing produced an error, err would equal that error
+      if (err) {
+        console.log(err);
+        return;
+      }
 
-    async.eachSeries(files,
-      calculateStockParameters,
-      (err) => {
-        // if any of the file processing produced an error, err would equal that error
-        if (err) {
-          console.log(err);
-          return;
-        }
+      try {
+        ratios.Rp = 0; // return of portfolio
+        portfolio.forEach((stock) => {
+          ratios.Rp += (stock.Wi / 100) * stock.avgReturn;
+        });
 
-        try {
-          ratios.Rp = 0; // return of portfolio
-          portfolio.forEach((stock) => {
-            ratios.Rp += (stock.Wi / 100) * stock.avgReturn;
-          });
+        const summation = {
+          Symbol: 'Sum',
+          Wi: 0,
+          avgReturn: 0,
+        };
 
-          const summation = {
-            Symbol: 'Sum',
-            Wi: 0,
-            avgReturn: 0,
-          };
-
-          const length = Object.keys(portfolio[0]).length - 3;
-          for (let j = 1; j <= length; j++) {
-            summation[`Day${j}`] = 0;
-            for (let i = 0; i < portfolio.length; i++) {
-              summation[`Day${j}`] += portfolio[i][`Day${j}`];
-            }
+        const length = Object.keys(portfolio[0]).length - 3;
+        for (let j = 1; j <= length; j++) {
+          summation[`Day${j}`] = 0;
+          for (let i = 0; i < portfolio.length; i++) {
+            summation[`Day${j}`] += portfolio[i][`Day${j}`];
           }
-          portfolio.push(summation);
-          ratios.PortfolioSigma = [];
-          Object.keys(summation).forEach((key) => {
-            // eslint-disable-next-line no-restricted-globals
-            if (key.startsWith('Day') && !isNaN(summation[key])) ratios.PortfolioSigma.push(summation[key]);
-          });
-
-          ratios.PortfolioSigma = stats.standardDeviation(ratios.PortfolioSigma);
-
-          ratios.JensonsAlpha = ratios.Rp - ratios['E(Rp)'];
-          ratios.SharpeRatio = (ratios['E(Rp)'] - ratios.ANNUAL_RISK_FREE_RETURN) / ratios.PortfolioBeta;
-          ratios.TreynorsRatio = (ratios['E(Rp)'] - ratios.ANNUAL_RISK_FREE_RETURN) / ratios.PortfolioSigma;
-
-          console.table(ratios);
-          fs.writeFileSync(`${__dirname}\\data\\ratios.json`, JSON.stringify(ratios, null, 2));
-        } catch (err2) {
-          console.error(err2);
         }
-      });
-  });
+        portfolio.push(summation);
+        ratios.PortfolioSigma = [];
+        Object.keys(summation).forEach((key) => {
+          // eslint-disable-next-line no-restricted-globals
+          if (key.startsWith('Day') && !isNaN(summation[key])) ratios.PortfolioSigma.push(summation[key]);
+        });
+
+        ratios.PortfolioSigma = stats.standardDeviation(ratios.PortfolioSigma);
+
+        ratios.JensonsAlpha = ratios.Rp - ratios['E(Rp)'];
+        ratios.SharpeRatio = (ratios['E(Rp)'] - ratios.ANNUAL_RISK_FREE_RETURN) / ratios.PortfolioSigma;
+        ratios.TreynorsRatio = (ratios['E(Rp)'] - ratios.ANNUAL_RISK_FREE_RETURN) / ratios.PortfolioBeta;
+
+        console.table(ratios);
+        fs.writeFileSync(`${__dirname}\\data\\ratios.json`, JSON.stringify(ratios, null, 2));
+      } catch (err2) {
+        console.error(err2);
+      }
+    });
 }
 
 // start();
