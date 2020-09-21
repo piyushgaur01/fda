@@ -27,26 +27,12 @@ let adjCloseMarket;
 let DAILY_MKT_RTN;
 
 function calculateStockParameters(filename, cb) {
-  const code = filename.split('.json')[0];
+  const Symbol = filename.split('.json')[0];
   const data = JSON.parse(fs.readFileSync(`${filePath}\\${filename}`, { encoding: 'utf-8' }))[0];
   const { adjclose } = data.indicators.adjclose[0];
 
   const dailyReturns = calcDailyReturns(adjclose);
   const avgReturn = averageReturn(dailyReturns);
-  // const sigmaRi = stats.standardDeviation(dailyReturns.map());
-
-  // Calcuting beta using linear regression
-  const valX = [...dailyReturns];
-  const valY = [...DAILY_MKT_RTN];
-  if (valX.length > valY.length) {
-    const extra = valX.length - valY.length;
-    valX.splice(valX.length - extra, extra);
-  } else {
-    const extra = valY.length - valX.length;
-    valY.splice(valY.length - extra, extra);
-  }
-
-  // const beta = leastSquareRegression(valY, valX);
 
   let beta = (avgReturn - constants.DAILY_RISK_FREE_RETURN) / (constants.MARKET_RETURN - constants.DAILY_RISK_FREE_RETURN);
   beta = 0.67 * beta + 0.33;
@@ -60,7 +46,7 @@ function calculateStockParameters(filename, cb) {
 
   const security = {
     // Name: stockInfo.name,
-    code,
+    Symbol,
     'Average Return': avgReturn,
     // 'Std Dev (Sigma_Ri)': sigmaRi,
     beta,
@@ -119,14 +105,17 @@ function start() {
             sumOfZi += stock.Zi;
           });
 
+          constants['E(Rp)'] = 0; // return of portfolio
           portfolio.forEach((stock) => {
             stock.Wi = parseFloat(((stock.Zi / sumOfZi) * 100).toPrecision(3));
+            constants['E(Rp)'] += (stock.Wi / 100) * stock.expectedReturn;
           });
 
-          const opts = { ...Object.keys(portfolio[0]) };
-          const csvData = parse(portfolio, opts);
-          fs.writeFileSync(`${__dirname}\\data\\portfolio.csv`, csvData); // -${Date.now()}
-          console.table(portfolio, ['code', 'Average Return', 'expectedReturn', 'beta', 'Treynor Ratio (TR)', 'Ci', 'Zi', 'Wi']);
+          console.table(constants);
+          // const opts = { ...Object.keys(portfolio[0]) };
+          // const csvData = parse(portfolio, opts);
+          // fs.writeFileSync(`${__dirname}\\data\\portfolio.csv`, csvData); // -${Date.now()}
+          // console.table(portfolio, ['Symbol', 'Average Return', 'expectedReturn', 'beta', 'Treynor Ratio (TR)', 'Ci', 'Zi', 'Wi']);
         } catch (err2) {
           console.error(err2);
         }
@@ -142,6 +131,5 @@ fs.createReadStream(`${__dirname}\\data\\market.csv`)
     DAILY_MKT_RTN = calcDailyReturns(adjCloseMarket);
     constants.MARKET_RETURN = averageReturn(DAILY_MKT_RTN);
     constants.SIGMA_M = stats.standardDeviation(DAILY_MKT_RTN);
-    console.table(constants);
     start();
   });

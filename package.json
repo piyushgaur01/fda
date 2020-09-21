@@ -12,6 +12,7 @@
   "dependencies": {
     "async": "^3.2.0",
     "axios": "^0.20.0",
+    "clone": "^2.1.2",
     "csv-parser": "^2.3.3",
     "json2csv": "^5.0.1",
     "simple-statistics": "^7.3.0"
