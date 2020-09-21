@@ -1,7 +1,7 @@
 const async = require('async');
 const fs = require('fs');
 const csv = require('csv-parser');
-const { parse } = require('json2csv');
+const stats = require('simple-statistics');
 
 const {
   averageReturn,
@@ -10,23 +10,28 @@ const {
 
 const filePath = `${__dirname}\\data\\securities\\current`;
 
-const constants = {
-  ANNUAL_RISK_FREE_RETURN: 0.06,
-  // DAILY_RISK_FREE_RETURN: 0.000047762540695384104,
-  DAILY_RISK_FREE_RETURN: 0.00015965358745284597,
-};
+let ratios;
 
-let portfolio = [];
+const portfolio = [];
 
 function calculateStockParameters(filename, cb) {
   const Symbol = filename.split('.json')[0];
   const data = JSON.parse(fs.readFileSync(`${filePath}\\${filename}`, { encoding: 'utf-8' }))[0];
   const { adjclose } = data.indicators.adjclose[0];
-
+  const weightedClose = [];
   const dailyReturns = calcDailyReturns(adjclose);
   const avgReturn = averageReturn(dailyReturns);
 
-  const stock = portfolio.find(s => s.Symbol === Symbol);
+  const stock = portfolio.find((s) => s.Symbol === Symbol);
+
+  adjclose.forEach((p) => {
+    weightedClose.push(p * stock.Wi);
+  });
+
+  const dailyWeightedReturn = calcDailyReturns(weightedClose);
+  dailyWeightedReturn.forEach((r, i) => {
+    stock[`Day${i + 1}`] = r;
+  });
 
   stock.avgReturn = avgReturn;
   cb();
@@ -46,17 +51,39 @@ function start() {
         }
 
         try {
-          constants.Rp = 0; // return of portfolio
+          ratios.Rp = 0; // return of portfolio
           portfolio.forEach((stock) => {
-            constants.Rp += (stock.Wi / 100) * stock.avgReturn;
+            ratios.Rp += (stock.Wi / 100) * stock.avgReturn;
           });
 
-          console.table(portfolio);
-          console.table(constants);
-          // const opts = { ...Object.keys(portfolio[0]) };
-          // const csvData = parse(portfolio, opts);
-          // fs.writeFileSync(`${__dirname}\\data\\portfolio.csv`, csvData); // -${Date.now()}
-          // console.table(portfolio, ['Symbol', 'Average Return', 'expectedReturn', 'beta', 'Treynor Ratio (TR)', 'Ci', 'Zi', 'Wi']);
+          const summation = {
+            Symbol: 'Sum',
+            Wi: 0,
+            avgReturn: 0,
+          };
+
+          const length = Object.keys(portfolio[0]).length - 3;
+          for (let j = 1; j <= length; j++) {
+            summation[`Day${j}`] = 0;
+            for (let i = 0; i < portfolio.length; i++) {
+              summation[`Day${j}`] += portfolio[i][`Day${j}`];
+            }
+          }
+          portfolio.push(summation);
+          ratios.PortfolioSigma = [];
+          Object.keys(summation).forEach((key) => {
+            // eslint-disable-next-line no-restricted-globals
+            if (key.startsWith('Day') && !isNaN(summation[key])) ratios.PortfolioSigma.push(summation[key]);
+          });
+
+          ratios.PortfolioSigma = stats.standardDeviation(ratios.PortfolioSigma);
+
+          ratios.JensonsAlpha = ratios.Rp - ratios['E(Rp)'];
+          ratios.SharpeRatio = (ratios['E(Rp)'] - ratios.ANNUAL_RISK_FREE_RETURN) / ratios.PortfolioBeta;
+          ratios.TreynorsRatio = (ratios['E(Rp)'] - ratios.ANNUAL_RISK_FREE_RETURN) / ratios.PortfolioSigma;
+
+          console.table(ratios);
+          fs.writeFileSync(`${__dirname}\\data\\ratios.json`, JSON.stringify(ratios, null, 2));
         } catch (err2) {
           console.error(err2);
         }
@@ -70,6 +97,7 @@ fs.createReadStream(`${__dirname}\\data\\portfolio.csv`)
   .pipe(csv())
   .on('data', (data) => portfolio.push(data))
   .on('end', () => {
+    ratios = JSON.parse(fs.readFileSync(`${__dirname}\\data\\ratios.json`, { encoding: 'utf-8' }));
     portfolio.forEach((s) => {
       delete s['Average Return'];
       delete s.beta;
@@ -80,6 +108,5 @@ fs.createReadStream(`${__dirname}\\data\\portfolio.csv`)
       delete s.Ci;
       delete s.Zi;
     });
-    console.table(portfolio);
     start();
   });
