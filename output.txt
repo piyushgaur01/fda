@@ -56,12 +56,12 @@ node get-stocks-data.js index completed successfully
 ┌─────────────────────────┬─────────────────────────┐
 │         (index)         │         Values          │
 ├─────────────────────────┼─────────────────────────┤
-│      MARKET_RETURN      │   0.7456419732801143    │
+│      MARKET_RETURN      │   0.12196065283810231   │
 │         SIGMA_M         │  0.008480549902297421   │
 │ ANNUAL_RISK_FREE_RETURN │          0.06           │
 │ DAILY_RISK_FREE_RETURN  │ 0.00015965358745284597  │
-│          E(Rp)          │   1.3599044985743554    │
-│      PortfolioBeta      │   1.8239799837257447    │
+│          E(Rp)          │   0.23958212504653592   │
+│      PortfolioBeta      │   1.9656861863174322    │
 │  ---------------------  │ '---------------------' │
 └─────────────────────────┴─────────────────────────┘
 
@@ -69,6 +69,7 @@ node index-analysis.js completed successfully
 **************************************************
 
 
+Saved data for BRITANNIA
 Saved data for EICHERMOT
 Saved data for MARUTI
 Saved data for BPCL
@@ -87,16 +88,6 @@ Saved data for AXISBANK
 Saved data for HDFC
 Saved data for ADANIPORTS
 Saved data for GAIL
-Saved data for ICICIBANK
-Saved data for ULTRACEMCO
-Saved data for INFY
-Saved data for NESTLEIND
-Saved data for LT
-Saved data for GRASIM
-Saved data for POWERGRID
-Saved data for TCS
-Saved data for SBIN
-Saved data for HINDALCO
 
 node get-stocks-data.js portfolio completed successfully
 **************************************************
@@ -105,18 +96,18 @@ node get-stocks-data.js portfolio completed successfully
 ┌─────────────────────────┬─────────────────────────┐
 │         (index)         │         Values          │
 ├─────────────────────────┼─────────────────────────┤
-│      MARKET_RETURN      │   0.7456419732801143    │
+│      MARKET_RETURN      │   0.12196065283810231   │
 │         SIGMA_M         │  0.008480549902297421   │
 │ ANNUAL_RISK_FREE_RETURN │          0.06           │
 │ DAILY_RISK_FREE_RETURN  │ 0.00015965358745284597  │
-│          E(Rp)          │   1.3599044985743554    │
-│      PortfolioBeta      │   1.8239799837257447    │
+│          E(Rp)          │   0.23958212504653592   │
+│      PortfolioBeta      │   1.9656861863174322    │
 │  ---------------------  │ '---------------------' │
-│           Rp            │   0.25176854479909694   │
-│     PortfolioSigma      │   0.2836442789923325    │
-│      JensonsAlpha       │   -1.1081359537752584   │
-│       SharpeRatio       │    4.582868736828972    │
-│      TreynorsRatio      │   0.7126747607827971    │
+│           Rp            │   0.2200274238751136    │
+│     PortfolioSigma      │   0.20505310840966887   │
+│      JensonsAlpha       │  -0.01955470117142233   │
+│       SharpeRatio       │    0.875783480871476    │
+│      TreynorsRatio      │   0.09135849165373124   │
 └─────────────────────────┴─────────────────────────┘
 
 node portfolio-analysis.js completed successfully

@@ -17,7 +17,8 @@ const averageReturn = (dailyReturns) => {
   ) - 1;
 
   // Average Return = (1+ADR)^(array.length) - 1
-  const avgReturn = Math.pow(1 + avgDailyReturn, dailyReturns.length) - 1;
+  let avgReturn = Math.pow(1 + avgDailyReturn, (dailyReturns.length)) - 1;
+  avgReturn = Math.pow((1 + avgReturn), (1 / (dailyReturns.length / 252))) - 1;
   return avgReturn;
 };
 
